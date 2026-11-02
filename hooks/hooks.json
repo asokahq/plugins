@@ -1,0 +1,6 @@
+{
+  "description": "At session start, says who is signed in to Asoka once, or how to sign in",
+  "modules": [
+    "./register.js"
+  ]
+}

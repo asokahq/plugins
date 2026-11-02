@@ -1,0 +1,20 @@
+{
+  "name": "asoka-plugins",
+  "description": "Claude Code plugins from Asoka. Install with: /plugin install asoka --marketplace asokahq/plugins",
+  "owner": {
+    "name": "Asoka",
+    "url": "https://asoka.com"
+  },
+  "plugins": [
+    {
+      "name": "asoka",
+      "source": "./",
+      "description": "Send work about the business systems Asoka administers for your organization to Asoka from Claude Code and read the result, with Asoka's own org context, access and approval gates.",
+      "category": "productivity",
+      "tags": [
+        "asoka",
+        "agent"
+      ]
+    }
+  ]
+}

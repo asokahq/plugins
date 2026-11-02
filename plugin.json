@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "asoka",
+  "version": "0.1.0",
+  "description": "Talk to Asoka, the agent that administers your organization's business systems, from your coding agent: send it work or questions and read the result, with Asoka's own context, access and approval gates.",
+  "author": {
+    "name": "Asoka",
+    "url": "https://asoka.com"
+  },
+  "homepage": "https://asoka.com",
+  "repository": "https://github.com/asokahq/plugins",
+  "keywords": [
+    "asoka",
+    "agent"
+  ],
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/setup/SKILL.md"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "asoka",
+  "version": "0.1.0",
+  "description": "Talk to Asoka, the agent that administers your organization's business systems, from Claude Code: send it work or questions and read the result, with Asoka's own context, access and approval gates.",
+  "author": {
+    "name": "Asoka",
+    "url": "https://asoka.com"
+  },
+  "homepage": "https://asoka.com",
+  "keywords": [
+    "asoka",
+    "agent"
+  ],
+  "mcpServers": {
+    "asoka": {
+      "type": "http",
+      "url": "${user_config.server_url}"
+    }
+  },
+  "userConfig": {
+    "server_url": {
+      "type": "string",
+      "title": "Asoka MCP server URL",
+      "description": "Where this plugin reaches Asoka. Leave the default unless Asoka gave you another address.",
+      "default": "https://app.asoka.com/mcp/asoka/v1"
+    }
+  }
+}
