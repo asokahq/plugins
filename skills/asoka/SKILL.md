@@ -89,9 +89,10 @@ to the user per poll, because a sleep is a poll that spends the user's 60 calls
 a minute without bringing the message, and a line per poll is noise between the
 ask and the answer. Speak when Asoka said something new or the status changed.
 When your system prompt says the asoka plugin watches Asoka requests in this
-session, send and end the turn instead: the plugin polls and starts a turn when
-Asoka asks a question or finishes, so a loop here would report the same message
-twice. Read `status`, and take Asoka's last message to mean the last entry in
+session, send, say in one line that Asoka has it and end the turn instead: the
+plugin polls and starts a turn when Asoka asks a question or finishes, so a loop
+here would report the same message twice. The line says only that Asoka has the
+ask, not what Asoka might ask back, since that is Asoka's to raise. Read `status`, and take Asoka's last message to mean the last entry in
 `messages` with `from` `asoka`:
 
 - `running`: call again with the new `after`. Past ten minutes, tell the user it is still running,

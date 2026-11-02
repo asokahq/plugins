@@ -17,8 +17,8 @@ instructions carry everything later sessions need.
 ## One call carries all of it
 
 The `setup` tool on the `asoka` server returns `org`, `email`, `enabled`,
-`systems`, `capabilities`, `writes`, `examples` and `open_requests` (each with
-`request_id`, `title`, `status`, `opened_at`). Call it first, and only once,
+and, when `enabled` is true, `systems`, `capabilities`, `writes`, `examples`
+and `open_requests` (each with `request_id`, `title`, `status`, `opened_at`). Call it first, and only once,
 since nothing in setup needs a second call.
 
 A failed call, or a result with `error`, means the user is not signed in, or is
@@ -57,10 +57,12 @@ own, because the `asoka` skill carries those and the user meets them when they
 first send work. A welcome longer than a screen is a document, and nobody reads
 it.
 
-When `enabled` is false, line 1 becomes: Asoka is signed in for `org` but not
-switched on for this plugin yet, so ask the person who administers Asoka for
-the organization (usually whoever set it up in Slack). Keep the list and drop
-the offer.
+When `enabled` is false, the result carries only `org`, `email` and
+`enabled`, since the server shares nothing more about an organization that has
+not switched it on. Say in one line that the user is signed in at `org` but
+Asoka is not switched on for this plugin yet, and that the person who
+administers Asoka for the organization (usually whoever set it up in Slack)
+can switch it on. Nothing else follows.
 
 ## Where the line is
 

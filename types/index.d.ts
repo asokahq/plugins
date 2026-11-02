@@ -4,7 +4,7 @@ declare module 'claude-code' {
       // Open Asoka requests this session watches, by request_id.
       watched: Record<
         string,
-        { title: string; after: string | null; status: string; openedAtMs: number }
+        { title: string; after: string | null; status: string; openedAtMs: number; lastLine: string }
       >
     }
   }

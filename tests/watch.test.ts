@@ -54,19 +54,19 @@ test('a running request updates the status line and wakes Claude once when Asoka
   await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
   await $.tool.call({ tool: SEND, message: 'Why does the Stage reset?\nDetails follow.' })
 
-  await clock.advance(2000)
-  await clock.advance(2000)
-  await clock.advance(2000)
+  await clock.advance(5000)
+  await clock.advance(5000)
+  await clock.advance(5000)
 
-  expect(polls[0]).toMatchObject({ request_id: 'r1', wait_seconds: 45 })
-  expect(polls[0].after).toBeUndefined()
-  expect(polls[1]).toMatchObject({ request_id: 'r1', after: 'm2', wait_seconds: 45 })
-  expect(statuses[0]).toBe('Asoka · running · 2s · Looking at the flow.')
+  expect(polls[0]).toEqual({ request_id: 'r1' })
+  expect(polls[1]).toEqual({ request_id: 'r1', after: 'm2' })
+  expect(statuses[0]).toBe('Asoka · running · 0s · Why does the Stage reset?')
+  expect(statuses[1]).toBe('Asoka · running · 5s · Looking at the flow.')
   expect(prompts).toHaveLength(1)
   expect(prompts[0]).toContain('request_id: "r1"')
   expect(prompts[0]).toContain('after: "m2"')
   expect(statuses[statuses.length - 1]).toBeUndefined()
-  await clock.advance(4000)
+  await clock.advance(10000)
   expect(polls.length).toBe(3)
 })
 
@@ -77,11 +77,11 @@ test('Claude reading the request itself moves the cursor and a finished request 
   await $.tool.call({ tool: SEND, message: 'Add a field' })
   await $.tool.call({ tool: GET, request_id: 'r1' })
 
-  await clock.advance(2000)
-  expect(polls[0]).toMatchObject({ request_id: 'r1', after: 'm1' })
+  await clock.advance(5000)
+  expect(polls[0]).toEqual({ request_id: 'r1', after: 'm1' })
   expect(prompts).toHaveLength(1)
   expect(prompts[0]).toContain('now done')
-  await clock.advance(4000)
+  await clock.advance(10000)
   expect(polls).toHaveLength(1)
 })
 
@@ -91,10 +91,13 @@ test('a failing call says how to sign in and stops polling', async ($, on) => {
   await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
   await $.tool.call({ tool: SEND, message: 'Add a field' })
 
-  await clock.advance(2000)
-  await clock.advance(4000)
+  await clock.advance(5000)
+  await clock.advance(10000)
   expect(polls).toHaveLength(1)
-  expect(statuses).toEqual(['Asoka: not signed in. Run /mcp, pick asoka and sign in, then /asoka:setup.'])
+  expect(statuses).toEqual([
+    'Asoka · running · 0s · Add a field',
+    'Asoka: not signed in. Run /mcp, pick asoka and sign in, then /asoka:setup.',
+  ])
   expect(prompts).toHaveLength(0)
 })
 

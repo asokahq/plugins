@@ -9,12 +9,21 @@ const SIGN_IN = `Asoka: not signed in. Run /mcp, pick asoka and sign in, then ${
 // The names Claude Code lists the server's tools under, from either server spelling.
 const SEND_MESSAGE = /^mcp__(plugin_asoka_asoka|asoka)__send_message$/
 const GET_REQUEST = /^mcp__(plugin_asoka_asoka|asoka)__get_request$/
-const WAIT_SECONDS = 45
-const TICK_MS = 2000
+// A short poll per request every few seconds: the mod's polling costs Claude no
+// context, so it holds no web thread waiting on the server.
+const POLL_EVERY_MS = 5000
+const TICK_MS = 1000
 const RATE_LIMIT_PAUSE_MS = 30000
 // Statuses after which Asoka does nothing more until the user writes again, so watching
 // stops; Claude's next send_message on the request starts it again.
 const STOPPED = new Set(['idle', 'waiting_for_approval', 'done', 'failed'])
+// How the transcript names each wake-up, by the status that caused it.
+const WAKE_VERB = {
+  idle: 'Asoka replied on',
+  waiting_for_approval: 'Asoka is waiting for an approver on',
+  done: 'Asoka finished',
+  failed: 'Asoka could not finish',
+}
 const watched = atom({ plugin: 'asoka', key: 'watched' }, {})
 
 let server = ''
@@ -22,6 +31,9 @@ let timer = null
 let canWake = false
 let pausedUntilMs = 0
 const inFlight = new Set()
+const lastPolledMs = new Map()
+// Wake-up prompts by their full text, with the one line the transcript shows for each.
+const compactRows = new Map()
 let pendingText = null
 
 
@@ -110,6 +122,10 @@ async function forget($, requestId) {
   if (!Object.keys(await read($, watched)).length) $.ui.status(undefined)
 }
 
+function showRunning($, entry, nowMs) {
+  $.ui.status(`Asoka · running · ${elapsed(entry.openedAtMs, nowMs)} · ${entry.lastLine || entry.title}`)
+}
+
 // What Claude's own calls taught us: a request it sent to, or where it has read up to.
 async function noteToolCall($, e, result) {
   const payload = parseJson(textOf(result.result ?? result))
@@ -124,6 +140,7 @@ async function noteToolCall($, e, result) {
         after: entry?.after ?? null,
         status: 'running',
         openedAtMs: entry?.openedAtMs ?? nowMs,
+        lastLine: entry?.lastLine ?? '',
       }
     } else if (entry) {
       const after = lastId(payload.messages ?? []) ?? entry.after
@@ -132,6 +149,8 @@ async function noteToolCall($, e, result) {
     }
     return next
   })
+  const sent = (await read($, watched))[payload.request_id]
+  if (SEND_MESSAGE.test(e.tool) && sent) showRunning($, sent, nowMs)
 }
 
 async function submitPrompt($, text) {
@@ -162,7 +181,7 @@ async function poll($, requestId) {
     if (!entry) return
     let payload
     try {
-      const args = { request_id: requestId, wait_seconds: WAIT_SECONDS }
+      const args = { request_id: requestId }
       if (entry.after) args.after = entry.after
       payload = parseJson(textOf(await call($, 'get_request', args)))
     } catch {
@@ -193,35 +212,39 @@ async function poll($, requestId) {
     if (asked || stopped) {
       const from = entry.after ? ` with after: "${entry.after}"` : ''
       const ask = asked ? 'Asoka has a question for the user.' : `Asoka's request is now ${status}.`
-      await submitPrompt(
-        $,
-        `${ask} Request "${entry.title}" (request_id ${requestId}). Read only the new messages with get_request(request_id: "${requestId}"${from}) and report them, or put Asoka's question to the user.`,
-      )
+      const text = `${ask} Request "${entry.title}" (request_id ${requestId}). Read only the new messages with get_request(request_id: "${requestId}"${from}) and report them, or put Asoka's question to the user.`
+      compactRows.set(text, `${asked ? 'Asoka has a question on' : WAKE_VERB[status] ?? 'Asoka replied on'} "${entry.title}"`)
+      await submitPrompt($, text)
       await forget($, requestId)
       return
     }
-    if (latest) $.ui.status(`Asoka · ${status} · ${elapsed(entry.openedAtMs, nowMs)} · ${firstLine(latest.text)}`)
+    const lastLine = latest ? firstLine(latest.text) : entry.lastLine
     await update($, watched, (all) => {
       const next = { ...all }
-      if (next[requestId]) next[requestId] = { ...next[requestId], after: lastId(messages) ?? entry.after, status }
+      if (next[requestId]) next[requestId] = { ...next[requestId], after: lastId(messages) ?? entry.after, status, lastLine }
       return next
     })
+    showRunning($, { ...entry, lastLine }, nowMs)
   } finally {
     inFlight.delete(requestId)
   }
 }
 
 async function tick($) {
-  if ((await $.clock.now()) < pausedUntilMs) return
+  const nowMs = await $.clock.now()
+  if (nowMs < pausedUntilMs) return
   const all = await read($, watched)
   for (const requestId of Object.keys(all)) {
-    if (!inFlight.has(requestId)) void poll($, requestId)
+    if (inFlight.has(requestId) || nowMs - (lastPolledMs.get(requestId) ?? 0) < POLL_EVERY_MS) continue
+    lastPolledMs.set(requestId, nowMs)
+    void poll($, requestId)
   }
 }
 
 const WATCHER_SECTION =
   'The asoka plugin watches the Asoka requests opened in this session. After send_message ' +
-  'returns, tell the user in one line that Asoka has the request and end the turn: the plugin ' +
+  'returns, tell the user in one line that Asoka has the request, without guessing what Asoka ' +
+  'might ask, and end the turn: the plugin ' +
   'long-polls get_request and starts a new turn when Asoka asks a question or finishes. Do ' +
   'not call get_request in a loop or sleep between calls.'
 
@@ -248,6 +271,12 @@ export function register(on) {
     if (!canWake) return composed
     const sections = [...(composed?.sections ?? []), { id: 'asoka-watcher', text: WATCHER_SECTION, scope: 'session' }]
     return { ...composed, sections }
+  })
+
+  // The wake-up prompt carries ids the model needs; the transcript shows one line.
+  on('ui.render', { component: 'UserMessage' }, ($, e, next) => {
+    const compact = !e.props.isExpanded && e.props.origin?.kind === 'plugin' && compactRows.get(e.props.text)
+    return compact ? next({ ...e, props: { ...e.props, text: compact } }) : next(e)
   })
 
   on('turn.complete', async ($, e, next) => {
