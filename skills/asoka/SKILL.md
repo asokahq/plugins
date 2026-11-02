@@ -80,13 +80,21 @@ stated fact more than a hunch. Give each message its own `idempotency_key`, any
 unique string, and send the same key again when you retry that message after a
 timeout. The retry returns `already_received` instead of a second request.
 
-Asoka works in the background for minutes. Space calls to
-`get_request(request_id)` 20 to 30 seconds apart, however you wait, because the
-user has 60 calls a minute across everything you send and a tight poll spends
-them on nothing. Read `status`, and take Asoka's last message to mean the last
-entry in `messages` with `from` `asoka`:
+Asoka works in the background for minutes. Each message in `get_request` carries
+an `id`. Pass the newest one you have seen as `after` to get only what is new,
+and `wait_seconds` (up to 50) to have the server hold the call until Asoka's
+next message or a status change, answering with an empty `messages` list when
+nothing happened. Wait inside the call: no sleep between calls and nothing said
+to the user per poll, because a sleep is a poll that spends the user's 60 calls
+a minute without bringing the message, and a line per poll is noise between the
+ask and the answer. Speak when Asoka said something new or the status changed.
+When your system prompt says the asoka plugin watches Asoka requests in this
+session, send and end the turn instead: the plugin polls and starts a turn when
+Asoka asks a question or finishes, so a loop here would report the same message
+twice. Read `status`, and take Asoka's last message to mean the last entry in
+`messages` with `from` `asoka`:
 
-- `running`: keep polling. Past ten minutes, tell the user it is still running,
+- `running`: call again with the new `after`. Past ten minutes, tell the user it is still running,
   so a long run does not look like silence, and carry on until they say stop.
 - `idle`: Asoka has stopped, the request stays open, and its last message says
   why. When that message carries `questions`, Asoka is waiting on an answer.

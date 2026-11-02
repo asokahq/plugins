@@ -39,8 +39,11 @@ and yours would describe a typical one:
 1. "Asoka is ready. You're signed in as `email` at `org`, connected to
    `systems`."
 2. "What you can do with Asoka:" and `capabilities`, one bullet each.
-3. The offer. Where you have a tool that asks the user a question with options
-   (Claude Code's `AskUserQuestion`), ask "Try one now?" with each of the
+3. The offer, after lines 1 and 2 are in your reply as text the user can read,
+   because a question tool takes the screen while it is open and an ask picked
+   before the user has seen what Asoka can do is picked blind. Where you have a
+   tool that asks the user a question with options (Claude Code's
+   `AskUserQuestion`), ask "Try one now?" with each of the
    `examples` as an option, verbatim, and "Skip" last, since picking beats
    retyping. When `open_requests` is not empty, its first entry goes before
    the examples as "Continue: `title`", because work the user already started

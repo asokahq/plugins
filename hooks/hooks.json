@@ -1,5 +1,5 @@
 {
-  "description": "At session start, says who is signed in to Asoka once, or how to sign in",
+  "description": "Says who is signed in to Asoka at session start, then watches the requests this session sends and wakes Claude when Asoka asks or stops",
   "modules": [
     "./register.js"
   ]

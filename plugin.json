@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "asoka",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Talk to Asoka, the agent that administers your organization's business systems, from your coding agent: send it work or questions and read the result, with Asoka's own context, access and approval gates.",
   "author": {
     "name": "Asoka",
@@ -17,5 +17,6 @@
     "com.openai": {
       "onboardingSkill": "./skills/setup/SKILL.md"
     }
-  }
+  },
+  "types": "./types/index.d.ts"
 }
