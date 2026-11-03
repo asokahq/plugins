@@ -1,6 +1,6 @@
 {
   "name": "asoka",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Talk to Asoka, the agent that administers your organization's business systems, from Claude Code: send it work or questions and read the result, with Asoka's own context, access and approval gates.",
   "author": {
     "name": "Asoka",
@@ -8,8 +8,7 @@
   },
   "homepage": "https://asoka.com",
   "keywords": [
-    "asoka",
-    "agent"
+    "asoka"
   ],
   "mcpServers": {
     "asoka": {

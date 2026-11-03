@@ -17,8 +17,8 @@ instructions carry everything later sessions need.
 ## One call carries all of it
 
 The `setup` tool on the `asoka` server returns `org`, `email`, `enabled`,
-`systems`, `capabilities`, `writes`, `examples` and `open_requests` (each with
-`request_id`, `title`, `status`, `opened_at`). Call it first, and only once,
+and, when `enabled` is true, `systems`, `capabilities`, `writes`, `examples`
+and `open_requests` (each with `request_id`, `title`, `status`, `opened_at`). Call it first, and only once,
 since nothing in setup needs a second call.
 
 A failed call, or a result with `error`, means the user is not signed in, or is
@@ -39,8 +39,11 @@ and yours would describe a typical one:
 1. "Asoka is ready. You're signed in as `email` at `org`, connected to
    `systems`."
 2. "What you can do with Asoka:" and `capabilities`, one bullet each.
-3. The offer. Where you have a tool that asks the user a question with options
-   (Claude Code's `AskUserQuestion`), ask "Try one now?" with each of the
+3. The offer, after lines 1 and 2 are in your reply as text the user can read,
+   because a question tool takes the screen while it is open and an ask picked
+   before the user has seen what Asoka can do is picked blind. Where you have a
+   tool that asks the user a question with options (Claude Code's
+   `AskUserQuestion`), ask "Try one now?" with each of the
    `examples` as an option, verbatim, and "Skip" last, since picking beats
    retyping. When `open_requests` is not empty, its first entry goes before
    the examples as "Continue: `title`", because work the user already started
@@ -54,10 +57,12 @@ own, because the `asoka` skill carries those and the user meets them when they
 first send work. A welcome longer than a screen is a document, and nobody reads
 it.
 
-When `enabled` is false, line 1 becomes: Asoka is signed in for `org` but not
-switched on for this plugin yet, so ask the person who administers Asoka for
-the organization (usually whoever set it up in Slack). Keep the list and drop
-the offer.
+When `enabled` is false, the result carries only `org`, `email` and
+`enabled`, since the server shares nothing more about an organization that has
+not switched it on. Say in one line that the user is signed in at `org` but
+Asoka is not switched on for this plugin yet, and that the person who
+administers Asoka for the organization (usually whoever set it up in Slack)
+can switch it on. Nothing else follows.
 
 ## Where the line is
 
@@ -71,13 +76,12 @@ Passes, signed in and enabled at an organization with Salesforce:
 >   field.
 > - Look things up: what changed and when, which records match a question, who
 >   has which access.
-> - Make changes: fields, layouts, automations, record updates. Built in the
->   sandbox, approved in Slack.
+> - Make changes: fields, layouts, automations, record updates.
 >
 > Try one now? (a question with the three asks as options, and Skip)
 
-Fails: the same, preceded by who you are signed in as on its own line, the
-sandbox sentence again on its own line, a line that the skill file was already
-current, and a paragraph on `send_message` and polling. Every sentence of it is
+Fails: the same, preceded by who you are signed in as on its own line, a
+sentence on where changes land and who approves them, a line that the skill
+file was already current, and a paragraph on `send_message` and polling. Every sentence of it is
 true, each was said once already or was not asked for, and the one line the
 user wanted, that Asoka is ready, is now the fifth thing on the screen.
