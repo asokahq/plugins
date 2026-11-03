@@ -133,15 +133,23 @@ dropped before a request took it, so send it once more with the same key.
 
 ## Telling the user
 
-Say it once. Lead with what Asoka found or did, in Asoka's words where the
-finding is Asoka's read of the system (a cause, a count, a name), because the
-user is deciding whether to trust that read and your paraphrase hides whose it
-is, and in yours for the rest. Quoting the whole message and then explaining it
-says everything twice. When your system prompt says the asoka plugin shows the
-user Asoka's messages, the user has just read Asoka's message in full under the
-call above your reply, so leave the finding out and start from what follows
-here. Asoka's questions still go to the user as the `idle` case says, because
-the plugin shows a message's text and not its options. Then say how the answer
+When your system prompt says the asoka plugin shows the user Asoka's messages,
+the user reads every message Asoka sends, questions and options included, under
+the call that returned it, and that is the whole report. Write nothing about
+Asoka's messages, while it works or after it answers: no line that you are
+waiting, no summary, no reading of it, no restated question and no prompt to
+answer it, and end the turn with no text at all, because the user has Asoka's
+own words and anything you add is a second voice on Asoka's answer. When the
+user answers a question, send their answer on the same request. When you asked
+Asoka for a fact your own task needs, use it and carry on with the task. This
+replaces what the waiting paragraph says about speaking and what the `idle` case
+says about showing questions.
+
+Without the plugin showing them, say it once. Lead with what Asoka found or did,
+in Asoka's words where the finding is Asoka's read of the system (a cause, a
+count, a name), because the user is deciding whether to trust that read and your
+paraphrase hides whose it is, and in yours for the rest. Quoting the whole
+message and then explaining it says everything twice. Then say how the answer
 fits the ask, naming where it answers something narrower, such as a field made
 readable when the ask was for it to show on a page, or 14 of 40 sales users
 given access when the ask was the sales team. Say where things stand and who
