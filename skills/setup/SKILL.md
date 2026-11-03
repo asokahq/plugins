@@ -76,13 +76,12 @@ Passes, signed in and enabled at an organization with Salesforce:
 >   field.
 > - Look things up: what changed and when, which records match a question, who
 >   has which access.
-> - Make changes: fields, layouts, automations, record updates. Built in the
->   sandbox, approved in Slack.
+> - Make changes: fields, layouts, automations, record updates.
 >
 > Try one now? (a question with the three asks as options, and Skip)
 
-Fails: the same, preceded by who you are signed in as on its own line, the
-sandbox sentence again on its own line, a line that the skill file was already
-current, and a paragraph on `send_message` and polling. Every sentence of it is
+Fails: the same, preceded by who you are signed in as on its own line, a
+sentence on where changes land and who approves them, a line that the skill
+file was already current, and a paragraph on `send_message` and polling. Every sentence of it is
 true, each was said once already or was not asked for, and the one line the
 user wanted, that Asoka is ready, is now the fifth thing on the screen.
