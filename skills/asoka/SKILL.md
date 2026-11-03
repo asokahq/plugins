@@ -88,15 +88,12 @@ nothing happened. Wait inside the call: no sleep between calls and nothing said
 to the user per poll, because a sleep is a poll that spends the user's 60 calls
 a minute without bringing the message, and a line per poll is noise between the
 ask and the answer. Speak when Asoka said something new or the status changed.
-When your system prompt says the asoka plugin watches Asoka requests in this
-session, send, say in one line that Asoka has it and end the turn instead: the
-plugin polls and starts a turn when Asoka asks a question or finishes, so a loop
-here would report the same message twice. The line says only that Asoka has the
-ask, not what Asoka might ask back, since that is Asoka's to raise. Read `status`, and take Asoka's last message to mean the last entry in
+Read `status`, and take Asoka's last message to mean the last entry in
 `messages` with `from` `asoka`:
 
-- `running`: call again with the new `after`. Past ten minutes, tell the user it is still running,
-  so a long run does not look like silence, and carry on until they say stop.
+- `running`: call again with the new `after`. Past ten minutes, tell the user
+  it is still running, so a long run does not look like silence, and carry on
+  until they say stop.
 - `idle`: Asoka has stopped, the request stays open, and its last message says
   why. When that message carries `questions`, Asoka is waiting on an answer.
   Each question has `text`, `options` with a `recommended` flag, and
@@ -136,19 +133,31 @@ dropped before a request took it, so send it once more with the same key.
 
 ## Telling the user
 
-Say it once. Lead with what Asoka found or did, in Asoka's words where the
-finding is Asoka's read of the system (a cause, a count, a name), because the
-user is deciding whether to trust that read and your paraphrase hides whose it
-is, and in yours for the rest. Quoting the whole message and then explaining it
-says everything twice. Then say how the answer fits the ask, naming where it
-answers something narrower, such as a field made readable when the ask was for
-it to show on a page, or 14 of 40 sales users given access when the ask was the
-sales team. Say where things stand and who acts next, by name when Asoka gave
-one: built in the sandbox, waiting for an approver, or waiting on a decision
-from the user. A sandbox change still has to be released to production by
-the organization, so unless the user asked for the sandbox, say that step is
-still ahead of them. When Asoka changed configuration this
-repository also holds, say the repository now differs from that system and
+When your system prompt says the asoka plugin shows the user Asoka's messages,
+the user reads every message Asoka sends, questions and options included, under
+the call that returned it, and that is the whole report. Write nothing about
+Asoka's messages, while it works or after it answers: no line that you are
+waiting, no summary, no reading of it, no restated question and no prompt to
+answer it, and end the turn with no text at all, because the user has Asoka's
+own words and anything you add is a second voice on Asoka's answer. When the
+user answers a question, send their answer on the same request. When you asked
+Asoka for a fact your own task needs, use it and carry on with the task. This
+replaces what the waiting paragraph says about speaking and what the `idle` case
+says about showing questions.
+
+Without the plugin showing them, say it once. Lead with what Asoka found or did,
+in Asoka's words where the finding is Asoka's read of the system (a cause, a
+count, a name), because the user is deciding whether to trust that read and your
+paraphrase hides whose it is, and in yours for the rest. Quoting the whole
+message and then explaining it says everything twice. Then say how the answer
+fits the ask, naming where it answers something narrower, such as a field made
+readable when the ask was for it to show on a page, or 14 of 40 sales users
+given access when the ask was the sales team. Say where things stand and who
+acts next, by name when Asoka gave one: built in the sandbox, waiting for an
+approver, or waiting on a decision from the user. A sandbox change still has to
+be released to production by the organization, so unless the user asked for the
+sandbox, say that step is still ahead of them. When Asoka changed configuration
+this repository also holds, say the repository now differs from that system and
 offer to bring it in line from the approved change, never to deploy it from
 here, because the approval in Slack is the organization's gate and a CLI deploy
 goes around it.
@@ -168,7 +177,8 @@ Sending, for an organization whose system is Salesforce:
   string: local. When it fails because a field in the query might not exist in
   the org, ask Asoka whether it does, then fix the test here.
 
-Reporting, after Asoka looked for a stage reset and found none. Passes:
+Reporting, after Asoka looked for a stage reset and found none, in a client
+where the plugin does not show Asoka's messages. Passes:
 
 > Nothing in your org resets Stage to Prospecting on save. Asoka's words: "No >
 > > active flow, Apex trigger or workflow rule sets Stage to Prospecting. The >
