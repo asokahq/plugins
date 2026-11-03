@@ -8,6 +8,7 @@ One entry per `version` in `plugin.json`. A release is a version bump merged to 
 - Claude Code mod: under each `get_request` call that brought new messages, the transcript shows Asoka's messages in full, so the user reads Asoka's own words. A prompt section, only in sessions with a screen, tells Claude the user sees them.
 - Claude Code mod: Asoka's questions show with every option, the recommended one, and "Pick one." or "Pick any.".
 - `asoka` skill: where the plugin shows Asoka's messages, Claude writes nothing about them and ends the turn; it sends the user's answer to a question on the same request.
+- Keywords and marketplace tags are `asoka` only. Kiro switches a power on by its keywords, and `agent` matched almost any conversation.
 
 ## 0.2.0
 
