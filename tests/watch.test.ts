@@ -7,6 +7,7 @@ const toolResult = (payload: unknown) => ({
   result: { content: [{ type: 'text', text: JSON.stringify(payload) }] },
 })
 const SEND = 'mcp__plugin_asoka_asoka__send_message'
+const COMPOSE = { model: 'claude-test', promptModel: 'claude-test', surfaces: ['terminal'], tools: [], outputStyle: null, traits: [] } as any
 const GET = 'mcp__plugin_asoka_asoka__get_request'
 
 // A session that is signed in, can be woken, and answers get_request from `replies` in order.
@@ -19,6 +20,7 @@ function session(on: any, replies: any[]) {
   on('store.get', () => ({ value: 'a@x.com' }))
   on('store.set', () => ({ value: undefined }))
   on('ui.toast', () => ({ value: undefined }))
+  on('prompt.compose', () => ({ sections: [] }))
   on('ui.status', ($: any, e: any) => {
     statuses.push(e.text)
     return { value: undefined }
@@ -63,8 +65,12 @@ test('a running request updates the status line and wakes Claude once when Asoka
   expect(statuses[0]).toBe('Asoka · running · 0s · Why does the Stage reset?')
   expect(statuses[1]).toBe('Asoka · running · 5s · Looking at the flow.')
   expect(prompts).toHaveLength(1)
-  expect(prompts[0]).toContain('request_id: "r1"')
-  expect(prompts[0]).toContain('after: "m2"')
+  expect(prompts[0]).toBe('Asoka has a question on "Why does the Stage reset?"')
+  const wake = (await $.prompt.compose(COMPOSE)).sections.find((s: any) => s.id === 'asoka-wakes')
+  expect(wake?.text).toContain('get_request(request_id: "r1", after: "m2")')
+  await $.tool.call({ tool: GET, request_id: 'r1', after: 'm2' })
+  const read = (await $.prompt.compose(COMPOSE)).sections.map((s: any) => s.id)
+  expect(read).not.toContain('asoka-wakes')
   expect(statuses[statuses.length - 1]).toBeUndefined()
   await clock.advance(10000)
   expect(polls.length).toBe(3)
@@ -80,7 +86,7 @@ test('Claude reading the request itself moves the cursor and a finished request 
   await clock.advance(5000)
   expect(polls[0]).toEqual({ request_id: 'r1', after: 'm1' })
   expect(prompts).toHaveLength(1)
-  expect(prompts[0]).toContain('now done')
+  expect(prompts[0]).toBe('Asoka finished "Add a field"')
   await clock.advance(10000)
   expect(polls).toHaveLength(1)
 })
@@ -114,7 +120,7 @@ test('without a surface to wake, nothing is watched and the prompt section is le
   })
   on('prompt.compose', () => ({ sections: [{ id: 'base', text: 'base', scope: 'session' }] }))
   await $.session.start({ surface: 'terminal', isInteractive: false, cwd: '/work' })
-  const composed = await $.prompt.compose({ model: 'claude-test' })
+  const composed = await $.prompt.compose(COMPOSE)
   expect(composed.sections.map((s: any) => s.id)).toEqual(['base'])
   expect(polls).toHaveLength(0)
 })

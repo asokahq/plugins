@@ -25,6 +25,8 @@ const WAKE_VERB = {
   failed: 'Asoka could not finish',
 }
 const watched = atom({ plugin: 'asoka', key: 'watched' }, {})
+// Wake-ups Claude has not read yet: the prompt names the request, the system prompt carries how to read it.
+const wakes = atom({ plugin: 'asoka', key: 'wakes' }, {})
 
 let server = ''
 let timer = null
@@ -32,8 +34,6 @@ let canWake = false
 let pausedUntilMs = 0
 const inFlight = new Set()
 const lastPolledMs = new Map()
-// Wake-up prompts by their full text, with the one line the transcript shows for each.
-const compactRows = new Map()
 let pendingText = null
 
 
@@ -131,6 +131,11 @@ async function noteToolCall($, e, result) {
   const payload = parseJson(textOf(result.result ?? result))
   if (!payload?.request_id) return
   const nowMs = await $.clock.now()
+  await update($, wakes, (all) => {
+    const next = { ...all }
+    delete next[payload.request_id]
+    return next
+  })
   await update($, watched, (all) => {
     const next = { ...all }
     const entry = next[payload.request_id]
@@ -210,11 +215,8 @@ async function poll($, requestId) {
     const nowMs = await $.clock.now()
     const latest = fromAsoka.length ? fromAsoka[fromAsoka.length - 1] : null
     if (asked || stopped) {
-      const from = entry.after ? ` with after: "${entry.after}"` : ''
-      const ask = asked ? 'Asoka has a question for the user.' : `Asoka's request is now ${status}.`
-      const text = `${ask} Request "${entry.title}" (request_id ${requestId}). Read only the new messages with get_request(request_id: "${requestId}"${from}) and report them, or put Asoka's question to the user.`
-      compactRows.set(text, `${asked ? 'Asoka has a question on' : WAKE_VERB[status] ?? 'Asoka replied on'} "${entry.title}"`)
-      await submitPrompt($, text)
+      await update($, wakes, (all) => ({ ...all, [requestId]: { title: entry.title, after: entry.after } }))
+      await submitPrompt($, `${asked ? 'Asoka has a question on' : WAKE_VERB[status] ?? 'Asoka replied on'} "${entry.title}"`)
       await forget($, requestId)
       return
     }
@@ -248,6 +250,18 @@ const WATCHER_SECTION =
   'long-polls get_request and starts a new turn when Asoka asks a question or finishes. Do ' +
   'not call get_request in a loop or sleep between calls.'
 
+function wakesSection(unread) {
+  const reads = unread.map(([id, w]) => {
+    const after = w.after ? `, after: "${w.after}"` : ''
+    return `- "${w.title}": get_request(request_id: "${id}"${after})`
+  })
+  return (
+    'A prompt from the asoka plugin that names one of these requests means Asoka has news on it. ' +
+    "Read only the new messages with the call listed, then report them to the user or put Asoka's question to the user.\n" +
+    reads.join('\n')
+  )
+}
+
 export function register(on) {
   on('session.start', async ($, e, next) => {
     await greet($)
@@ -270,13 +284,9 @@ export function register(on) {
     const composed = await next(e)
     if (!canWake) return composed
     const sections = [...(composed?.sections ?? []), { id: 'asoka-watcher', text: WATCHER_SECTION, scope: 'session' }]
+    const unread = Object.entries(await read($, wakes))
+    if (unread.length) sections.push({ id: 'asoka-wakes', text: wakesSection(unread), scope: 'session' })
     return { ...composed, sections }
-  })
-
-  // The wake-up prompt carries ids the model needs; the transcript shows one line.
-  on('ui.render', { component: 'UserMessage' }, ($, e, next) => {
-    const compact = !e.props.isExpanded && e.props.origin?.kind === 'plugin' && compactRows.get(e.props.text)
-    return compact ? next({ ...e, props: { ...e.props, text: compact } }) : next(e)
   })
 
   on('turn.complete', async ($, e, next) => {

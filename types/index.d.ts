@@ -6,6 +6,8 @@ declare module 'claude-code' {
         string,
         { title: string; after: string | null; status: string; openedAtMs: number; lastLine: string }
       >
+      // Wake-ups Claude has not read yet, by request_id.
+      wakes: Record<string, { title: string; after: string | null }>
     }
   }
 }
