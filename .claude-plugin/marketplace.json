@@ -12,8 +12,7 @@
       "description": "Send work about the business systems Asoka administers for your organization to Asoka from Claude Code and read the result, with Asoka's own org context, access and approval gates.",
       "category": "productivity",
       "tags": [
-        "asoka",
-        "agent"
+        "asoka"
       ]
     }
   ]

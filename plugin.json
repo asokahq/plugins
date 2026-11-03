@@ -10,8 +10,7 @@
   "homepage": "https://asoka.com",
   "repository": "https://github.com/asokahq/plugins",
   "keywords": [
-    "asoka",
-    "agent"
+    "asoka"
   ],
   "extensions": {
     "com.openai": {
