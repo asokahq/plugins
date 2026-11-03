@@ -1,41 +1,13 @@
-// Says who is signed in at session start, then watches the Asoka requests this session
-// sends: long-polls each one and wakes Claude only when Asoka has something to act on.
-import { atom, read, update } from 'claude-code'
-
+// Says who is signed in at session start, and shows the user what Asoka said under each
+// get_request call that brought it.
 const SERVER_KEY = 'asoka'
 const SERVER_NAMES = ['plugin:asoka:asoka', 'plugin_asoka_asoka', 'asoka']
 const SETUP = '/asoka:setup'
-const SIGN_IN = `Asoka: not signed in. Run /mcp, pick asoka and sign in, then ${SETUP}.`
-// The names Claude Code lists the server's tools under, from either server spelling.
-const SEND_MESSAGE = /^mcp__(plugin_asoka_asoka|asoka)__send_message$/
 const GET_REQUEST = /^mcp__(plugin_asoka_asoka|asoka)__get_request$/
-// A short poll per request every few seconds: the mod's polling costs Claude no
-// context, so it holds no web thread waiting on the server.
-const POLL_EVERY_MS = 5000
-const TICK_MS = 1000
-const RATE_LIMIT_PAUSE_MS = 30000
-// Statuses after which Asoka does nothing more until the user writes again, so watching
-// stops; Claude's next send_message on the request starts it again.
-const STOPPED = new Set(['idle', 'waiting_for_approval', 'done', 'failed'])
-// How the transcript names each wake-up, by the status that caused it.
-const WAKE_VERB = {
-  idle: 'Asoka replied on',
-  waiting_for_approval: 'Asoka is waiting for an approver on',
-  done: 'Asoka finished',
-  failed: 'Asoka could not finish',
-}
-const watched = atom({ plugin: 'asoka', key: 'watched' }, {})
-// Wake-ups Claude has not read yet: the prompt names the request, the system prompt carries how to read it.
-const wakes = atom({ plugin: 'asoka', key: 'wakes' }, {})
+const SHOWN_SECTION =
+  'The asoka plugin shows the user every message Asoka sends, in full, under the get_request call that returned it.'
 
 let server = ''
-let timer = null
-let canWake = false
-let pausedUntilMs = 0
-const inFlight = new Set()
-const lastPolledMs = new Map()
-let pendingText = null
-
 
 function textOf(result) {
   if (typeof result === 'string') return result
@@ -95,15 +67,6 @@ async function greet($) {
   $.ui.toast(`Signed in to Asoka as ${payload.email} at ${payload.org}. Run ${SETUP} to see what Asoka does for ${payload.org}.`)
 }
 
-const firstLine = (text) => String(text ?? '').split('\n').find((line) => line.trim()) ?? ''
-
-function elapsed(sinceMs, nowMs) {
-  const s = Math.max(0, Math.round((nowMs - sinceMs) / 1000))
-  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`
-}
-
-const lastId = (messages) => (messages.length ? messages[messages.length - 1].id : null)
-
 // Without a cursor the thread comes back whole; what Asoka said after the requester's
 // latest message is what is new.
 function newMessages(messages, after) {
@@ -113,188 +76,39 @@ function newMessages(messages, after) {
   return messages.slice(i + 1)
 }
 
-async function forget($, requestId) {
-  await update($, watched, (all) => {
-    const next = { ...all }
-    delete next[requestId]
-    return next
-  })
-  if (!Object.keys(await read($, watched)).length) $.ui.status(undefined)
-}
-
-function showRunning($, entry, nowMs) {
-  $.ui.status(`Asoka · running · ${elapsed(entry.openedAtMs, nowMs)} · ${entry.lastLine || entry.title}`)
-}
-
-// What Claude's own calls taught us: a request it sent to, or where it has read up to.
-async function noteToolCall($, e, result) {
-  const payload = parseJson(textOf(result.result ?? result))
-  if (!payload?.request_id) return
-  const nowMs = await $.clock.now()
-  await update($, wakes, (all) => {
-    const next = { ...all }
-    delete next[payload.request_id]
-    return next
-  })
-  await update($, watched, (all) => {
-    const next = { ...all }
-    const entry = next[payload.request_id]
-    if (SEND_MESSAGE.test(e.tool)) {
-      next[payload.request_id] = {
-        title: entry?.title ?? firstLine(e.message).slice(0, 80),
-        after: entry?.after ?? null,
-        status: 'running',
-        openedAtMs: entry?.openedAtMs ?? nowMs,
-        lastLine: entry?.lastLine ?? '',
-      }
-    } else if (entry) {
-      const after = lastId(payload.messages ?? []) ?? entry.after
-      if (STOPPED.has(payload.status)) delete next[payload.request_id]
-      else next[payload.request_id] = { ...entry, after, status: payload.status ?? entry.status }
-    }
-    return next
-  })
-  const sent = (await read($, watched))[payload.request_id]
-  if (SEND_MESSAGE.test(e.tool) && sent) showRunning($, sent, nowMs)
-}
-
-async function submitPrompt($, text) {
-  let reason
-  try {
-    const result = await $.prompt.submit({ text })
-    reason = result?.drop ?? ''
-  } catch (error) {
-    reason = String(error?.message ?? error)
-  }
-  if (
-    reason.includes('the session was stopped and nobody has sent input since') ||
-    reason.includes('was removed from the queue before it ran')
-  ) {
-    pendingText = text
-  }
-}
-
-function stopWatching() {
-  if (timer) timer.cancel()
-  timer = null
-}
-
-async function poll($, requestId) {
-  inFlight.add(requestId)
-  try {
-    const entry = (await read($, watched))[requestId]
-    if (!entry) return
-    let payload
-    try {
-      const args = { request_id: requestId }
-      if (entry.after) args.after = entry.after
-      payload = parseJson(textOf(await call($, 'get_request', args)))
-    } catch {
-      payload = null
-    }
-    if (!payload) {
-      $.ui.status(SIGN_IN)
-      stopWatching()
-      return
-    }
-    if (payload.error === 'rate_limited') {
-      pausedUntilMs = (await $.clock.now()) + RATE_LIMIT_PAUSE_MS
-      return
-    }
-    if (payload.error) {
-      $.ui.status(`Asoka: ${payload.message ?? payload.error}`)
-      await forget($, requestId)
-      return
-    }
-    const messages = payload.messages ?? []
-    const fresh = newMessages(messages, entry.after)
-    const status = payload.status ?? entry.status
-    const fromAsoka = fresh.filter((m) => m.from === 'asoka')
-    const asked = fromAsoka.some((m) => Array.isArray(m.questions) && m.questions.length)
-    const stopped = status !== entry.status && STOPPED.has(status)
-    const nowMs = await $.clock.now()
-    const latest = fromAsoka.length ? fromAsoka[fromAsoka.length - 1] : null
-    if (asked || stopped) {
-      await update($, wakes, (all) => ({ ...all, [requestId]: { title: entry.title, after: entry.after } }))
-      await submitPrompt($, `${asked ? 'Asoka has a question on' : WAKE_VERB[status] ?? 'Asoka replied on'} "${entry.title}"`)
-      await forget($, requestId)
-      return
-    }
-    const lastLine = latest ? firstLine(latest.text) : entry.lastLine
-    await update($, watched, (all) => {
-      const next = { ...all }
-      if (next[requestId]) next[requestId] = { ...next[requestId], after: lastId(messages) ?? entry.after, status, lastLine }
-      return next
-    })
-    showRunning($, { ...entry, lastLine }, nowMs)
-  } finally {
-    inFlight.delete(requestId)
-  }
-}
-
-async function tick($) {
-  const nowMs = await $.clock.now()
-  if (nowMs < pausedUntilMs) return
-  const all = await read($, watched)
-  for (const requestId of Object.keys(all)) {
-    if (inFlight.has(requestId) || nowMs - (lastPolledMs.get(requestId) ?? 0) < POLL_EVERY_MS) continue
-    lastPolledMs.set(requestId, nowMs)
-    void poll($, requestId)
-  }
-}
-
-const WATCHER_SECTION =
-  'The asoka plugin watches the Asoka requests opened in this session. After send_message ' +
-  'returns, tell the user in one line that Asoka has the request, without guessing what Asoka ' +
-  'might ask, and end the turn: the plugin ' +
-  'long-polls get_request and starts a new turn when Asoka asks a question or finishes. Do ' +
-  'not call get_request in a loop or sleep between calls.'
-
-function wakesSection(unread) {
-  const reads = unread.map(([id, w]) => {
-    const after = w.after ? `, after: "${w.after}"` : ''
-    return `- "${w.title}": get_request(request_id: "${id}"${after})`
-  })
-  return (
-    'A prompt from the asoka plugin that names one of these requests means Asoka has news on it. ' +
-    "Read only the new messages with the call listed, then report them to the user or put Asoka's question to the user.\n" +
-    reads.join('\n')
-  )
+function asokaMessages(toolCall) {
+  if (!GET_REQUEST.test(toolCall.tool) || toolCall.isRunning || toolCall.isErrored || toolCall.output == null) return []
+  const payload = parseJson(textOf(toolCall.output))
+  const messages = Array.isArray(payload?.messages) ? payload.messages : []
+  return newMessages(messages, toolCall.input?.after).filter((m) => m.from === 'asoka' && String(m.text ?? '').trim())
 }
 
 export function register(on) {
   on('session.start', async ($, e, next) => {
     await greet($)
-    try {
-      canWake = (await $.session.surfaces()).length > 0
-    } catch {
-      canWake = false
-    }
-    if (canWake && !timer) timer = $.clock.every(TICK_MS, () => void tick($))
     return next(e)
   })
-
-  on('tool.call', { tool: [SEND_MESSAGE, GET_REQUEST] }, async ($, e, next) => {
-    const result = await next(e)
-    if (canWake && !result.deny && !result.isError) await noteToolCall($, e, result)
-    return result
-  }).catch(($, e, next) => (next.called ? undefined : next(e)))
 
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)
-    if (!canWake) return composed
-    const sections = [...(composed?.sections ?? []), { id: 'asoka-watcher', text: WATCHER_SECTION, scope: 'session' }]
-    const unread = Object.entries(await read($, wakes))
-    if (unread.length) sections.push({ id: 'asoka-wakes', text: wakesSection(unread), scope: 'session' })
+    if (!e.surfaces?.length) return composed
+    const sections = [...(composed?.sections ?? []), { id: 'asoka-shown', text: SHOWN_SECTION, scope: 'session' }]
     return { ...composed, sections }
   })
 
-  on('turn.complete', async ($, e, next) => {
-    if (pendingText) {
-      const text = pendingText
-      pendingText = null
-      void submitPrompt($, text)
-    }
-    return next(e)
+  on('ui.render', { component: 'ToolGroup' }, async ($, e, next) => {
+    const drawn = await next(e)
+    if (e.props.isExpanded) return drawn
+    const messages = e.props.calls.flatMap(asokaMessages)
+    if (!messages.length) return drawn
+    const { Box, Text, Markdown } = $.ui.resolve(e)
+    return h(
+      Box,
+      { flexDirection: 'column' },
+      drawn,
+      ...messages.map((m) =>
+        h(Box, { flexDirection: 'column', marginTop: 1, paddingLeft: 2 }, h(Text, { bold: true }, 'Asoka'), h(Markdown, { text: m.text })),
+      ),
+    )
   })
 }
