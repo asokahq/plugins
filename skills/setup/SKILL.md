@@ -10,8 +10,7 @@ administers their organization's business systems and does work in them on
 request, and this plugin lets the user hand it that work from here. Setup is one
 short conversation. By the end the user knows which organization they are signed
 in to and what Asoka can do for it, and has seen the asks they could type right
-now. You are done when that is true, or, when you cannot sign them in from
-here, when the user knows how to sign in.
+now. You are done when that is true, or when the user knows how to sign in.
 Nothing is installed: the `asoka` skill and the server's own
 instructions carry everything later sessions need.
 
@@ -22,25 +21,16 @@ and, when `enabled` is true, `systems`, `capabilities`, `writes`, `examples`
 and `open_requests` (each with `request_id`, `title`, `status`, `opened_at`). Call it first, and only once,
 since nothing in setup needs a second call.
 
-While the user is not signed in, Claude Code lists an `authenticate` tool on
-the `asoka` server in place of `setup`, so there is no `setup` to call yet. When
-`authenticate` is listed, sign the user in from here, which saves them a trip
-through `/mcp`. Call it and put the link it returns on its own line, as plain
-text with no question tool open, because the user is in the browser until they
-come back. Tell them to sign in with the account their organization uses for
-Asoka and to come back here once the browser says they are signed in. If the
-page the browser lands on fails to load, as on a remote machine, they paste its
-address here and you pass it to `complete_authentication`. Then call `setup`
-and go on to the welcome. The next paragraph applies only when `authenticate`
-or `complete_authentication` returns an error.
-
 A failed call, or a result with `error`, means the user is not signed in, or is
-signed in with an account that is not a member of an Asoka organization. Say
-that in a line, say how to sign in, and stop, because nothing below is true
-until they have. In Claude Code: run `/mcp`, pick `asoka` and sign in in the
-browser, then run `/asoka:setup` again. In Codex: sign in to the `asoka` server
-when Codex asks, or from its list of the plugin's servers, then run the
-plugin's setup again.
+signed in with an account that is not a member of an Asoka organization. So does
+an `authenticate` tool listed on the `asoka` server in place of `setup`, which
+is how Claude Code shows a signed-out server. Don't call `authenticate`: the
+page its link lands on fails to load, while `/mcp` finishes in the browser. Say
+that in a line, say how to sign in, and stop, because you cannot sign the user
+in from here and nothing below is true until they have. In Claude Code: run
+`/mcp`, pick `asoka` and sign in in the browser, then run `/asoka:setup` again.
+In Codex: sign in to the `asoka` server when Codex asks, or from its list of the
+plugin's servers, then run the plugin's setup again.
 
 ## The welcome
 

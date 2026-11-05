@@ -3,6 +3,7 @@
 const SERVER_KEY = 'asoka'
 const SERVER_NAMES = ['plugin:asoka:asoka', 'plugin_asoka_asoka', 'asoka']
 const SETUP = '/asoka:setup'
+const SIGN_IN = '/mcp'
 const SIGN_IN_NUDGE_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000
 const GET_REQUEST = /^mcp__(plugin_asoka_asoka|asoka)__get_request$/
 const SHOWN_SECTION =
@@ -75,11 +76,11 @@ async function nudgeSignIn($) {
   if (typeof nudgedAt === 'number' && now - nudgedAt < SIGN_IN_NUDGE_INTERVAL_MS) return
   await $.store.set('sign_in_nudged_at', now)
   const draft = await $.prompt.read()
-  const filled = draft.text.trim() ? null : await $.prompt.fill({ text: SETUP })
+  const filled = draft.text.trim() ? null : await $.prompt.fill({ text: SIGN_IN })
   $.ui.toast(
     filled?.isFilled
-      ? `Asoka is not connected yet. Press Enter to run ${SETUP} and sign in.`
-      : `Asoka is not connected yet. Run ${SETUP} to sign in.`,
+      ? `Asoka is not connected yet. Press Enter, pick asoka and sign in, then run ${SETUP}.`
+      : `Asoka is not connected yet. Run ${SIGN_IN}, pick asoka and sign in, then run ${SETUP}.`,
   )
 }
 
@@ -116,7 +117,7 @@ function messageMarkdown(m) {
 
 export function register(on) {
   on('session.start', async ($, e, next) => {
-    await greet($)
+    if (e.isInteractive) await greet($)
     return next(e)
   })
 

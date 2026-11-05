@@ -72,6 +72,6 @@ test('a session that is not signed in says how to sign in', async ($, on) => {
   await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
 
   expect(saved[0]).toMatchObject({ key: 'sign_in_nudged_at' })
-  expect(fills[0]).toMatchObject({ text: '/asoka:setup' })
-  expect(toasts[0]).toBe('Asoka is not connected yet. Press Enter to run /asoka:setup and sign in.')
+  expect(fills[0]).toMatchObject({ text: '/mcp' })
+  expect(toasts[0]).toBe('Asoka is not connected yet. Press Enter, pick asoka and sign in, then run /asoka:setup.')
 })
