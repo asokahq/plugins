@@ -1,5 +1,5 @@
 {
-  "description": "Says who is signed in to Asoka at session start, and shows Asoka's messages under the get_request call that brought them",
+  "description": "Says who is signed in to Asoka at session start, and puts /mcp in the prompt box while signed out",
   "modules": [
     "./register.js"
   ]

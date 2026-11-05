@@ -11,8 +11,8 @@ request, and this plugin lets the user hand it that work from here. Setup is one
 short conversation. By the end the user knows which organization they are signed
 in to and what Asoka can do for it, and has seen the asks they could type right
 now. You are done when that is true, or when the user knows how to sign in.
-Nothing is installed: the `asoka` skill and the server's own
-instructions carry everything later sessions need.
+Nothing is installed: the server's own instructions carry everything later
+sessions need.
 
 ## One call carries all of it
 
@@ -51,12 +51,12 @@ and yours would describe a typical one:
    retyping. When `open_requests` is not empty, its first entry goes before
    the examples as "Continue: `title`", because work the user already started
    beats a sample. Without such a tool, list the same options and ask in one
-   line. A picked example goes to Asoka through the `asoka` skill as a new
+   line. A picked example goes to Asoka with `send_message` as a new
    request; a picked open request continues through `get_request` on its
-   `request_id`, as the `asoka` skill describes.
+   `request_id`, as the server's instructions describe.
 
 Nothing else: not the tools, the limits, the request loop or `writes` on its
-own, because the `asoka` skill carries those and the user meets them when they
+own, because the server's instructions carry those and the user meets them when they
 first send work. A welcome longer than a screen is a document, and nobody reads
 it.
 

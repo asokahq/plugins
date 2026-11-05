@@ -1,14 +1,9 @@
-// Says who is signed in at session start, and shows the user what Asoka said under each
-// get_request call that brought it.
+// Says who is signed in at session start, and puts /mcp in the prompt box while signed out.
 const SERVER_KEY = 'asoka'
 const SERVER_NAMES = ['plugin:asoka:asoka', 'plugin_asoka_asoka', 'asoka']
 const SETUP = '/asoka:setup'
 const SIGN_IN = '/mcp'
 const SIGN_IN_NUDGE_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000
-const GET_REQUEST = /^mcp__(plugin_asoka_asoka|asoka)__get_request$/
-const SHOWN_SECTION =
-  "The asoka plugin shows the user every message Asoka sends, in full, under the get_request call that returned it, " +
-  "including each of Asoka's questions with all its options, which one Asoka recommends and whether more than one can be picked."
 
 let server = ''
 
@@ -84,63 +79,9 @@ async function nudgeSignIn($) {
   )
 }
 
-// Without a cursor the thread comes back whole; what Asoka said after the requester's
-// latest message is what is new.
-function newMessages(messages, after) {
-  if (after) return messages
-  let i = messages.length - 1
-  while (i >= 0 && messages[i].from !== 'requester') i -= 1
-  return messages.slice(i + 1)
-}
-
-function asokaMessages(toolCall) {
-  if (!GET_REQUEST.test(toolCall.tool) || toolCall.isRunning || toolCall.isErrored || toolCall.output == null) return []
-  const payload = parseJson(textOf(toolCall.output))
-  const messages = Array.isArray(payload?.messages) ? payload.messages : []
-  return newMessages(messages, toolCall.input?.after).filter(
-    (m) => m.from === 'asoka' && (String(m.text ?? '').trim() || m.questions?.length),
-  )
-}
-
-function questionMarkdown(q) {
-  const head = [q.text && `**${q.text}**`, q.detail, q.multi_select ? 'Pick any.' : 'Pick one.'].filter(Boolean)
-  const options = (q.options ?? []).map((o, i) => {
-    const label = `${i + 1}. ${o.label}${o.recommended ? ' (recommended)' : ''}`
-    return o.description ? `${label}\n   ${o.description}` : label
-  })
-  return [...head, options.join('\n')].join('\n\n')
-}
-
-function messageMarkdown(m) {
-  return [String(m.text ?? '').trim(), ...(m.questions ?? []).map(questionMarkdown)].filter(Boolean).join('\n\n')
-}
-
 export function register(on) {
   on('session.start', async ($, e, next) => {
     if (e.isInteractive) await greet($)
     return next(e)
-  })
-
-  on('prompt.compose', async ($, e, next) => {
-    const composed = await next(e)
-    if (!e.surfaces?.length) return composed
-    const sections = [...(composed?.sections ?? []), { id: 'asoka-shown', text: SHOWN_SECTION, scope: 'session' }]
-    return { ...composed, sections }
-  })
-
-  on('ui.render', { component: 'ToolGroup' }, async ($, e, next) => {
-    const drawn = await next(e)
-    if (e.props.isExpanded) return drawn
-    const messages = e.props.calls.flatMap(asokaMessages)
-    if (!messages.length) return drawn
-    const { Box, Text, Markdown } = $.ui.resolve(e)
-    return h(
-      Box,
-      { flexDirection: 'column' },
-      drawn,
-      ...messages.map((m) =>
-        h(Box, { flexDirection: 'column', marginTop: 1, paddingLeft: 2 }, h(Text, { bold: true }, 'Asoka'), h(Markdown, { text: messageMarkdown(m) })),
-      ),
-    )
   })
 }

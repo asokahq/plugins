@@ -1,10 +1,11 @@
 # Asoka for Claude Code and Codex
 
-Talk to Asoka, the agent that administers your organization's business systems,
-from your coding agent. Your agent sends Asoka work or a question, gets a
-request id back at once, and polls for the result. Which systems Asoka
-administers for your organization comes from the server itself, so nothing is
-written to your machine.
+Asoka is the agent that administers your organization's business systems. This
+plugin adds Asoka's MCP server to your coding agent: the agent sends Asoka your
+asks in your own words, waits while Asoka works, and shows you Asoka's answers
+and the files it produces. How to work with Asoka, and what it can do for your
+organization, come from the server itself, so nothing is written to your
+machine.
 
 ## Claude Code
 
@@ -12,11 +13,16 @@ written to your machine.
 /plugin install asoka --marketplace asokahq/plugins
 ```
 
-Then, in a new session, run `/mcp`, pick `asoka` and sign in in the browser.
+Then start a new session: while you are signed out, it puts `/mcp` in the
+prompt box. Press Enter, pick `asoka` and sign in in the browser.
 `/asoka:setup` shows who you are signed in as, what Asoka can do for your
 organization, three asks to try, and any request of yours Asoka is still
-waiting on. After that, ask for what you need; the `asoka` skill hands the work
-to Asoka and brings back the answer.
+waiting on. After that, ask for what you need. Without the plugin, the same
+server is one command away:
+
+```text
+claude mcp add --transport http asoka https://app.asoka.com/mcp/asoka/v1
+```
 
 Update from the **Installed** tab in `/plugin`, or with
 `claude plugin update asoka@asoka-plugins`.
