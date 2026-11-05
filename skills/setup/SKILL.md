@@ -22,7 +22,10 @@ and `open_requests` (each with `request_id`, `title`, `status`, `opened_at`). Ca
 since nothing in setup needs a second call.
 
 A failed call, or a result with `error`, means the user is not signed in, or is
-signed in with an account that is not a member of an Asoka organization. Say
+signed in with an account that is not a member of an Asoka organization. So does
+an `authenticate` tool listed on the `asoka` server in place of `setup`, which
+is how Claude Code shows a signed-out server. Don't call `authenticate`: the
+page its link lands on fails to load, while `/mcp` finishes in the browser. Say
 that in a line, say how to sign in, and stop, because you cannot sign the user
 in from here and nothing below is true until they have. In Claude Code: run
 `/mcp`, pick `asoka` and sign in in the browser, then run `/asoka:setup` again.
