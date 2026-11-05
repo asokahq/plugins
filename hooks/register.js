@@ -3,6 +3,7 @@
 const SERVER_KEY = 'asoka'
 const SERVER_NAMES = ['plugin:asoka:asoka', 'plugin_asoka_asoka', 'asoka']
 const SETUP = '/asoka:setup'
+const SIGN_IN_NUDGE_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000
 const GET_REQUEST = /^mcp__(plugin_asoka_asoka|asoka)__get_request$/
 const SHOWN_SECTION =
   "The asoka plugin shows the user every message Asoka sends, in full, under the get_request call that returned it, " +
@@ -56,7 +57,7 @@ async function greet($) {
     payload = null
   }
   if (!payload || payload.error) {
-    $.ui.toast(`Asoka is not connected yet. Sign in from /mcp, then run ${SETUP}.`)
+    await nudgeSignIn($)
     return
   }
   if (payload.enabled === false) {
@@ -66,6 +67,20 @@ async function greet($) {
   if (greeted === payload.email) return
   await $.store.set('greeted', payload.email)
   $.ui.toast(`Signed in to Asoka as ${payload.email} at ${payload.org}. Run ${SETUP} to see what Asoka does for ${payload.org}.`)
+}
+
+async function nudgeSignIn($) {
+  const now = await $.clock.now()
+  const nudgedAt = await $.store.get('sign_in_nudged_at')
+  if (typeof nudgedAt === 'number' && now - nudgedAt < SIGN_IN_NUDGE_INTERVAL_MS) return
+  await $.store.set('sign_in_nudged_at', now)
+  const draft = await $.prompt.read()
+  const filled = draft.text.trim() ? null : await $.prompt.fill({ text: SETUP })
+  $.ui.toast(
+    filled?.isFilled
+      ? `Asoka is not connected yet. Press Enter to run ${SETUP} and sign in.`
+      : `Asoka is not connected yet. Run ${SETUP} to sign in.`,
+  )
 }
 
 // Without a cursor the thread comes back whole; what Asoka said after the requester's
