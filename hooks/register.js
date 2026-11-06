@@ -1,14 +1,15 @@
-// Says who is signed in at session start, and shows the user what Asoka said under each
-// get_request call that brought it.
+// Says who is signed in at session start, puts /mcp in the prompt box while signed out, and
+// shows the user what Asoka said under each get_request call that brought it.
 const SERVER_KEY = 'asoka'
 const SERVER_NAMES = ['plugin:asoka:asoka', 'plugin_asoka_asoka', 'asoka']
 const SETUP = '/asoka:setup'
 const SIGN_IN = '/mcp'
 const SIGN_IN_NUDGE_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000
 const GET_REQUEST = /^mcp__(plugin_asoka_asoka|asoka)__get_request$/
-const SHOWN_SECTION =
-  "The asoka plugin shows the user every message Asoka sends, in full, under the get_request call that returned it, " +
-  "including each of Asoka's questions with all its options, which one Asoka recommends and whether more than one can be picked."
+// The server's instructions name this reminder as the case where Claude does not repeat Asoka's messages.
+const SHOWN_REMINDER =
+  "The user's editor has already shown the text of Asoka's messages from this get_request result, in full, " +
+  'under the call. It has not shown their questions.'
 
 let server = ''
 
@@ -93,26 +94,21 @@ function newMessages(messages, after) {
   return messages.slice(i + 1)
 }
 
-function asokaMessages(toolCall) {
-  if (!GET_REQUEST.test(toolCall.tool) || toolCall.isRunning || toolCall.isErrored || toolCall.output == null) return []
-  const payload = parseJson(textOf(toolCall.output))
+// A read that brings a file carries more blocks after the JSON one.
+function payloadOf(output) {
+  const text = textOf(output)
+  return parseJson(text) ?? parseJson(text.split('\n')[0])
+}
+
+function asokaMessages(output, after) {
+  const payload = payloadOf(output)
   const messages = Array.isArray(payload?.messages) ? payload.messages : []
-  return newMessages(messages, toolCall.input?.after).filter(
-    (m) => m.from === 'asoka' && (String(m.text ?? '').trim() || m.questions?.length),
-  )
+  return newMessages(messages, after).filter((m) => m.from === 'asoka' && String(m.text ?? '').trim())
 }
 
-function questionMarkdown(q) {
-  const head = [q.text && `**${q.text}**`, q.detail, q.multi_select ? 'Pick any.' : 'Pick one.'].filter(Boolean)
-  const options = (q.options ?? []).map((o, i) => {
-    const label = `${i + 1}. ${o.label}${o.recommended ? ' (recommended)' : ''}`
-    return o.description ? `${label}\n   ${o.description}` : label
-  })
-  return [...head, options.join('\n')].join('\n\n')
-}
-
-function messageMarkdown(m) {
-  return [String(m.text ?? '').trim(), ...(m.questions ?? []).map(questionMarkdown)].filter(Boolean).join('\n\n')
+function drawnMessages(toolCall) {
+  if (!GET_REQUEST.test(toolCall.tool) || toolCall.isRunning || toolCall.isErrored || toolCall.output == null) return []
+  return asokaMessages(toolCall.output, toolCall.input?.after)
 }
 
 export function register(on) {
@@ -121,17 +117,18 @@ export function register(on) {
     return next(e)
   })
 
-  on('prompt.compose', async ($, e, next) => {
-    const composed = await next(e)
-    if (!e.surfaces?.length) return composed
-    const sections = [...(composed?.sections ?? []), { id: 'asoka-shown', text: SHOWN_SECTION, scope: 'session' }]
-    return { ...composed, sections }
+  on('tool.call', async ($, e, next) => {
+    const result = await next(e)
+    if (!GET_REQUEST.test(e.tool) || result.deny || result.isError) return result
+    if (!asokaMessages(result.text ?? '', e.after).length) return result
+    if (!(await $.session.surfaces()).length) return result
+    return { ...result, context: [...(result.context ?? []), SHOWN_REMINDER] }
   })
 
   on('ui.render', { component: 'ToolGroup' }, async ($, e, next) => {
     const drawn = await next(e)
     if (e.props.isExpanded) return drawn
-    const messages = e.props.calls.flatMap(asokaMessages)
+    const messages = e.props.calls.flatMap(drawnMessages)
     if (!messages.length) return drawn
     const { Box, Text, Markdown } = $.ui.resolve(e)
     return h(
@@ -139,7 +136,7 @@ export function register(on) {
       { flexDirection: 'column' },
       drawn,
       ...messages.map((m) =>
-        h(Box, { flexDirection: 'column', marginTop: 1, paddingLeft: 2 }, h(Text, { bold: true }, 'Asoka'), h(Markdown, { text: messageMarkdown(m) })),
+        h(Box, { flexDirection: 'column', marginTop: 1, paddingLeft: 2 }, h(Text, { bold: true }, 'Asoka'), h(Markdown, { text: String(m.text).trim() })),
       ),
     )
   })

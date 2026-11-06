@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "asoka",
-  "version": "0.3.0",
-  "description": "Talk to Asoka, the agent that administers your organization's business systems, from your coding agent: send it work or questions and read the result, with Asoka's own context, access and approval gates.",
+  "version": "0.4.0",
+  "description": "Asoka, the agent that administers your organization's business systems, as an MCP server in your coding agent: the agent sends Asoka the user's asks and shows Asoka's answers, with Asoka's own context, access and approval gates.",
   "author": {
     "name": "Asoka",
     "url": "https://asoka.com"

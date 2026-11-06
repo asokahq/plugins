@@ -2,6 +2,13 @@
 
 One entry per `version` in `plugin.json`. A release is a version bump merged to `main` and a `v<version>` tag by hand.
 
+## 0.4.0
+
+- The `asoka` skill is gone, and so is the mod's prompt section. The server's own `instructions` now carry how to work with Asoka (send the user's words, wait while a request runs, show Asoka's messages in full, ask Asoka's questions with the client's question tool), so every client gets the same rules. Needs the server from asokahq/asoka#5411, which also returns the files Asoka produces as embedded resources on `get_request`.
+- Claude Code mod: still shows Asoka's messages under the `get_request` call that brought them, now without their questions, which Claude asks with its question tool. When it shows them, it adds a reminder to that call's result saying so, and Claude ends its turn with one line pointing at the answer in place of quoting it. Without a screen (`claude -p`) there is no reminder and Claude quotes. Needs the server sentence about that reminder (asokahq/asoka#5486).
+- Claude Code mod: a signed-out session puts `/mcp` in the prompt box, at most once every 7 days, and a `-p` or SDK session skips the greeting.
+- `setup` skill: a signed-out user is sent to `/mcp`; Claude doesn't call Claude Code's `authenticate` tool.
+
 ## 0.3.0
 
 - Claude Code mod: no polling and no wake-ups. Claude waits on Asoka itself with `get_request`'s `after` and `wait_seconds`, in every client.

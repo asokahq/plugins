@@ -3,9 +3,11 @@
 This repository holds the Asoka plugin for Claude Code and Codex. The server
 it talks to lives in the private `asokahq/asoka` repository, in
 `backend/apps/mcp_host/servers/asoka.py`; that file is the contract for the
-`send_message`, `get_request` and `setup` tools and their error codes. A change
-to a tool is a PR in each repository: the server change in `asokahq/asoka`, the
-skill or hook change here.
+`send_message`, `get_request` and `setup` tools, their error codes, and the
+instructions the client agent follows. A change to how an agent works with
+Asoka is a change to those instructions, in `asokahq/asoka`. A change to a tool
+is a PR in each repository: the server change in `asokahq/asoka`, the skill or
+hook change here.
 
 Every pull request runs `claude plugin validate .` and `claude plugin test .`
 (`.github/workflows/check.yml`). Run both before opening one:
