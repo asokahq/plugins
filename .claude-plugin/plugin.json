@@ -1,6 +1,6 @@
 {
   "name": "asoka",
-  "version": "0.4.0",
+  "version": "0.4.2",
   "description": "Asoka, the agent that administers your organization's business systems, as an MCP server in Claude Code: your agent sends Asoka the user's asks and shows Asoka's answers, with Asoka's own context, access and approval gates.",
   "author": {
     "name": "Asoka",
