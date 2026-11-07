@@ -34,8 +34,7 @@ codex plugin marketplace add asokahq/plugins
 ```
 
 then install `asoka` and run its setup; Codex signs you in and shows the same
-welcome. Sign-in with ChatGPT is in beta, and API-key users cannot use OAuth
-plugins such as this one.
+welcome. API-key users cannot use OAuth plugins such as this one.
 
 ## Other MCP clients
 
