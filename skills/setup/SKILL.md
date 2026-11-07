@@ -61,10 +61,11 @@ first send work. A welcome longer than a screen is a document, and nobody reads
 it.
 
 When `enabled` is false, the result carries only `org`, `email` and
-`enabled`, since the server shares nothing more about an organization where it
-is not switched on. Say in one line that the user is signed in at `org` but
-Asoka is not switched on for this plugin yet, and that only Asoka can switch it
-on, so they should ask their Asoka contact. Nothing else follows.
+`enabled`, since the server shares nothing more about an organization that has
+not switched it on. Say in one line that the user is signed in at `org` but
+Asoka is not switched on for this plugin yet, and that the person who
+administers Asoka for the organization (usually whoever set it up in Slack)
+can switch it on. Nothing else follows.
 
 ## Where the line is
 

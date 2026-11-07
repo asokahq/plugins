@@ -7,22 +7,6 @@ and the files it produces. How to work with Asoka, and what it can do for your
 organization, come from the server itself, so nothing is written to your
 machine.
 
-## Before you start
-
-1. Ask the Asoka team to switch Asoka's MCP server on for your organization
-   and to set up each person who will use it. Until the server is on you can
-   sign in, but Asoka takes no requests. Setup (`/asoka:setup` in Claude Code,
-   the `setup` tool in other clients) shows that Asoka isn't switched on for
-   your organization yet.
-2. Sign in with the work account your organization uses with Asoka. Asoka
-   refuses any other account, and anyone it hasn't set up yet. Either way,
-   your coding agent shows the sign-in prompt again with no error message.
-3. Salesforce changes you ask for from a coding agent go to a sandbox unless
-   the Asoka team has set your organization up otherwise. A change that needs
-   sign-off waits for your organization's approver in the chat tool it uses
-   with Asoka, Slack or Microsoft Teams, as any other Asoka request does. The
-   approver needs an account linked to Asoka in that tool.
-
 ## Claude Code
 
 ```text
@@ -50,7 +34,7 @@ codex plugin marketplace add asokahq/plugins
 ```
 
 then install `asoka` and run its setup; Codex signs you in and shows the same
-welcome.
+welcome. API-key users cannot use OAuth plugins such as this one.
 
 ## Other MCP clients
 
