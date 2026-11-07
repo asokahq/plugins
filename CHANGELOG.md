@@ -2,6 +2,10 @@
 
 One entry per `version` in `plugin.json`. A release is a version bump merged to `main` and a `v<version>` tag by hand.
 
+## 0.4.2
+
+- Claude Code mod: `get_request` calls go to the server exactly as Claude wrote them. 0.4.1 added `wait_until: "next_message"` to each call, and Claude Code's auto mode refused to run the changed call, so Claude had to send it again. Claude Code now gets the server's default `turn_end`, which returns Asoka's messages together once its turn ends.
+
 ## 0.4.1
 
 - Claude Code mod: when it draws Asoka's messages, its `get_request` calls pass `wait_until: "next_message"`, so each message still shows as Asoka posts it. Every other client, and Claude Code without a screen, gets the server's default `turn_end`, which returns Asoka's messages together once its turn ends. Needs asokahq/asoka#5530; an older server ignores the argument.

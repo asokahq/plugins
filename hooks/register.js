@@ -120,7 +120,7 @@ export function register(on) {
   on('tool.call', async ($, e, next) => {
     if (!GET_REQUEST.test(e.tool)) return next(e)
     const drawing = (await $.session.surfaces()).length > 0
-    const result = await next(drawing ? { ...e, wait_until: 'next_message' } : e)
+    const result = await next(e)
     if (!drawing || result.deny || result.isError) return result
     if (!asokaMessages(result.text ?? '', e.after).length) return result
     return { ...result, context: [...(result.context ?? []), SHOWN_REMINDER] }
