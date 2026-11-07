@@ -2,6 +2,10 @@
 
 One entry per `version` in `plugin.json`. A release is a version bump merged to `main` and a `v<version>` tag by hand.
 
+## 0.4.1
+
+- Claude Code mod: when it draws Asoka's messages, its `get_request` calls pass `wait_until: "next_message"`, so each message still shows as Asoka posts it. Every other client, and Claude Code without a screen, gets the server's default `turn_end`, which returns Asoka's messages together once its turn ends. Needs asokahq/asoka#5530; an older server ignores the argument.
+
 ## 0.4.0
 
 - The `asoka` skill is gone, and so is the mod's prompt section. The server's own `instructions` now carry how to work with Asoka (send the user's words, wait while a request runs, show Asoka's messages in full, ask Asoka's questions with the client's question tool), so every client gets the same rules. Needs the server from asokahq/asoka#5411, which also returns the files Asoka produces as embedded resources on `get_request`.
